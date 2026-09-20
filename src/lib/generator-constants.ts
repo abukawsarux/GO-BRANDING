@@ -80,6 +80,9 @@ export const DEFAULT_SAMPLE_LOGO = `data:image/svg+xml;utf8,<svg xmlns="http://w
 export const DEFAULT_SAMPLE_IMAGE = `https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80`;
 
 export const DEFAULT_BRANDING: BrandingSettings = {
+  brandKitId: "kit-lumina",
+  primaryColor: "#4F46E5",
+  secondaryColor: "#06B6D4",
   logo: {
     enabled: true,
     url: DEFAULT_SAMPLE_LOGO,
@@ -90,12 +93,15 @@ export const DEFAULT_BRANDING: BrandingSettings = {
   brandName: {
     enabled: true,
     text: "LUMINA CO.",
+    fontFamily: "Inter",
+    color: "#ffffff",
     size: 20,
     opacity: 90,
     position: "bottom-left",
   },
   watermark: {
     enabled: true,
+    type: "text",
     text: "© 2026 LUMINA CO • ALL RIGHTS RESERVED",
     size: 13,
     opacity: 60,

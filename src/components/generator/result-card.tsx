@@ -334,8 +334,8 @@ export function ResultCard({
       ctx.save();
       ctx.globalAlpha = branding.brandName.opacity / 100;
       const scaledFontSize = Math.round((preset.width / 1080) * branding.brandName.size * 2);
-      ctx.font = `bold ${scaledFontSize}px sans-serif`;
-      ctx.fillStyle = "#ffffff";
+      ctx.font = `bold ${scaledFontSize}px ${branding.brandName.fontFamily || "sans-serif"}`;
+      ctx.fillStyle = branding.brandName.color || "#ffffff";
       ctx.shadowColor = "rgba(0,0,0,0.85)";
       ctx.shadowBlur = 10;
       ctx.shadowOffsetX = 2;
@@ -364,40 +364,74 @@ export function ResultCard({
       ctx.restore();
     }
 
-    // Draw Watermark text if enabled
-    if (branding.watermark.enabled && branding.watermark.text) {
-      ctx.save();
-      ctx.globalAlpha = branding.watermark.opacity / 100;
-      const scaledWmSize = Math.round((preset.width / 1080) * branding.watermark.size * 1.8);
-      ctx.font = `500 ${scaledWmSize}px monospace`;
-      ctx.fillStyle = "rgba(255,255,255,0.92)";
-      ctx.shadowColor = "rgba(0,0,0,0.8)";
-      ctx.shadowBlur = 8;
+    // Draw Watermark if enabled (Text or Image Badge)
+    if (branding.watermark.enabled) {
+      if (branding.watermark.type === "image" && branding.watermark.imageUrl) {
+        const wmImg = new Image();
+        wmImg.crossOrigin = "anonymous";
+        wmImg.src = branding.watermark.imageUrl;
+        await new Promise((res) => {
+          wmImg.onload = res;
+          wmImg.onerror = res;
+        });
 
-      let wx = preset.width - 40;
-      let wy = preset.height - 40;
-      ctx.textAlign = "right";
+        const wmWidth = (preset.width * (branding.watermark.size / 100)) * 0.7;
+        const wmAspect = (wmImg.width || 1) / (wmImg.height || 1);
+        const wmHeight = wmWidth / wmAspect;
 
-      if (branding.watermark.position === "top-left") {
-        ctx.textAlign = "left";
-        wx = 40;
-        wy = 40 + scaledWmSize;
-      } else if (branding.watermark.position === "top-right") {
+        ctx.save();
+        ctx.globalAlpha = branding.watermark.opacity / 100;
+        let wx = preset.width - wmWidth - 30;
+        let wy = preset.height - wmHeight - 30;
+        if (branding.watermark.position === "top-left") {
+          wx = 30;
+          wy = 30;
+        } else if (branding.watermark.position === "top-right") {
+          wx = preset.width - wmWidth - 30;
+          wy = 30;
+        } else if (branding.watermark.position === "bottom-left") {
+          wx = 30;
+          wy = preset.height - wmHeight - 30;
+        } else if (branding.watermark.position === "center") {
+          wx = (preset.width - wmWidth) / 2;
+          wy = (preset.height - wmHeight) / 2;
+        }
+        ctx.drawImage(wmImg, wx, wy, wmWidth, wmHeight);
+        ctx.restore();
+      } else if (branding.watermark.text) {
+        ctx.save();
+        ctx.globalAlpha = branding.watermark.opacity / 100;
+        const scaledWmSize = Math.round((preset.width / 1080) * branding.watermark.size * 1.8);
+        ctx.font = `500 ${scaledWmSize}px ${branding.watermark.fontFamily || "monospace"}`;
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.shadowColor = "rgba(0,0,0,0.8)";
+        ctx.shadowBlur = 8;
+
+        let wx = preset.width - 40;
+        let wy = preset.height - 40;
         ctx.textAlign = "right";
-        wx = preset.width - 40;
-        wy = 40 + scaledWmSize;
-      } else if (branding.watermark.position === "bottom-left") {
-        ctx.textAlign = "left";
-        wx = 40;
-        wy = preset.height - 40;
-      } else if (branding.watermark.position === "center") {
-        ctx.textAlign = "center";
-        wx = preset.width / 2;
-        wy = preset.height / 2;
-      }
 
-      ctx.fillText(branding.watermark.text, wx, wy);
-      ctx.restore();
+        if (branding.watermark.position === "top-left") {
+          ctx.textAlign = "left";
+          wx = 40;
+          wy = 40 + scaledWmSize;
+        } else if (branding.watermark.position === "top-right") {
+          ctx.textAlign = "right";
+          wx = preset.width - 40;
+          wy = 40 + scaledWmSize;
+        } else if (branding.watermark.position === "bottom-left") {
+          ctx.textAlign = "left";
+          wx = 40;
+          wy = preset.height - 40;
+        } else if (branding.watermark.position === "center") {
+          ctx.textAlign = "center";
+          wx = preset.width / 2;
+          wy = preset.height / 2;
+        }
+
+        ctx.fillText(branding.watermark.text, wx, wy);
+        ctx.restore();
+      }
     }
 
     return canvas;
@@ -904,7 +938,7 @@ export function ResultCard({
               className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs h-[38px] cursor-pointer"
             >
               <Pencil className="h-3.5 w-3.5 text-slate-500" />
-              <span>Edit</span>
+              <span>Edit in Studio</span>
             </button>
           </div>
 
@@ -1275,6 +1309,19 @@ export function ResultCard({
                           </button>
                         </>
                       )}
+
+                      <div className="my-1 border-t border-slate-100" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenMenuPresetId(null);
+                          onEdit();
+                        }}
+                        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-indigo-600" />
+                        <span>Edit in Studio</span>
+                      </button>
                     </div>
                   )}
                 </div>

@@ -107,6 +107,37 @@ export function saveRecentGeneration(item: RecentGeneration): void {
   }
 }
 
+export function duplicateRecentGeneration(id: string): RecentGeneration[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const existing = getRecentGenerations();
+    const item = existing.find((g) => g.id === id);
+    if (!item) return existing;
+
+    const baseName = item.mediaName.replace(/\s*\(Copy(\s*\d+)?\)/gi, "");
+    const extMatch = baseName.match(/(\.[^.]+)$/);
+    const ext = extMatch ? extMatch[1] : "";
+    const nameWithoutExt = extMatch ? baseName.slice(0, -ext.length) : baseName;
+    const duplicatedName = `${nameWithoutExt} (Copy)${ext}`;
+
+    const duplicate: RecentGeneration = {
+      ...item,
+      id: `proj-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      mediaName: duplicatedName,
+    };
+
+    const updated = [duplicate, ...existing].slice(0, MAX_HISTORY_ITEMS);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  } catch (err) {
+    console.warn("Failed to duplicate generation in localStorage:", err);
+    return [];
+  }
+}
+
 export function deleteRecentGeneration(id: string): RecentGeneration[] {
   if (typeof window === "undefined") return [];
 

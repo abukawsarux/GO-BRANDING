@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, Palette, Layers, History, Coins } from "lucide-react";
+import { Sparkles, Palette, Layers, History, Coins, LayoutDashboard } from "lucide-react";
 
 interface HeaderProps {
   workspaceName: string;
@@ -19,6 +19,7 @@ export function DashboardHeader({
 
   const navItems = [
     { label: "Studio", href: "/", icon: Sparkles },
+    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { label: "Brand Kit", href: "/dashboard/brand", icon: Palette },
     { label: "Templates", href: "/dashboard/templates", icon: Layers },
     { label: "History", href: "/dashboard/history", icon: History },
@@ -60,6 +61,8 @@ export function DashboardHeader({
             const isActive =
               item.href === "/"
                 ? pathname === "/" || pathname === "/dashboard/studio"
+                : item.href === "/dashboard"
+                ? pathname === "/dashboard"
                 : pathname.startsWith(item.href);
             return (
               <Link

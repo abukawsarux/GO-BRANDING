@@ -46,20 +46,45 @@ export interface BrandNameConfig {
   size: number; // font size 12 - 40px
   opacity: number; // percentage 10 - 100
   position: OverlayPosition;
+  fontFamily?: string;
+  color?: string;
 }
 
 export interface WatermarkConfig {
   enabled: boolean;
+  type?: "text" | "image";
   text: string;
-  size: number; // font size 10 - 28px
+  imageUrl?: string;
+  size: number; // font size 10 - 28px or image size %
   opacity: number; // percentage 10 - 100
   position: OverlayPosition;
+  fontFamily?: string;
 }
 
 export interface BrandingSettings {
   logo: LogoConfig;
   brandName: BrandNameConfig;
   watermark: WatermarkConfig;
+  brandKitId?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+}
+
+export interface BrandKitDefinition {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  brandName: string;
+  watermarkText?: string;
+  watermarkImageUrl?: string;
+  watermarkType?: "text" | "image";
+  primaryColor: string;
+  secondaryColor: string;
+  headingFont?: string;
+  defaultLogoPosition?: OverlayPosition;
+  defaultLogoSize?: number;
+  defaultOpacity?: number;
+  isDefault?: boolean;
 }
 
 export interface FormatPreset {
@@ -93,6 +118,7 @@ export interface GeneratedFormatResult {
 export interface RecentGeneration {
   id: string;
   createdAt: string; // ISO string
+  updatedAt?: string;
   mediaName: string;
   mediaType: "image" | "video";
   thumbnailUrl: string; // Base64 data URL
@@ -102,6 +128,8 @@ export interface RecentGeneration {
   previewRatio: PreviewRatio;
   formatsCount: number;
   selectedPresetIds: string[];
+  brandKitName?: string;
+  customFileName?: string;
 }
 
 

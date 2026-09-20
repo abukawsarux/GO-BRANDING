@@ -26,6 +26,9 @@ import {
   Upload,
   Smartphone,
   Film,
+  Plus,
+  X,
+  Check,
 } from "lucide-react";
 
 function InstagramIcon({ className = "h-4 w-4" }: { className?: string }) {
@@ -59,7 +62,10 @@ interface MediaPreviewProps {
   branding: BrandingSettings;
   activePreset?: FormatPreset;
   availablePresets?: FormatPreset[];
+  allAvailablePresets?: FormatPreset[];
   onSelectPreset?: (preset: FormatPreset) => void;
+  onAddPreset?: (preset: FormatPreset) => void;
+  onRemovePreset?: (presetId: string) => void;
   previewRatio?: PreviewRatio;
   aspectRatioClass?: string; // backward compat
   transform: MediaFrameTransform;
@@ -83,7 +89,10 @@ export function MediaPreview({
   branding,
   activePreset,
   availablePresets,
+  allAvailablePresets,
   onSelectPreset,
+  onAddPreset,
+  onRemovePreset,
   previewRatio = "square",
   transform,
   onChangeTransform,
@@ -93,10 +102,26 @@ export function MediaPreview({
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const customFileRef = useRef<HTMLInputElement>(null);
+  const addMenuRef = useRef<HTMLDivElement>(null);
 
   const [containerBounds, setContainerBounds] = useState({ width: 480, height: 320 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, panX: 0, panY: 0 });
+
+  // Add format dropdown state
+  const [showAddMenu, setShowAddMenu] = useState(false);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!showAddMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setShowAddMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showAddMenu]);
 
   // Video playback & scrubbing state
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
@@ -349,82 +374,206 @@ export function MediaPreview({
     onSelectPreset?.(preset);
   };
 
+  // Auto-scroll active tab into view in preview switcher
+  useEffect(() => {
+    if (!tabsContainerRef.current || !activePreset) return;
+    const activeEl = tabsContainerRef.current.querySelector<HTMLElement>(
+      `[data-preset-id="${activePreset.id}"]`
+    );
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
+    }
+  }, [activePreset?.id]);
+
+  const unselectedPresets =
+    allAvailablePresets?.filter((p) => !availablePresets?.some((a) => a.id === p.id)) || [];
+
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* Live Branding Preview Header matching mockup */}
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white shadow-2xs">
-          <InstagramIcon className="h-4 w-4" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white shadow-2xs">
+            <InstagramIcon className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Live Branding Preview</h3>
+            <p className="text-[11px] text-slate-500">
+              See how your media will look with your branding in real-time
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-bold text-slate-900">Live Branding Preview</h3>
-          <p className="text-[11px] text-slate-500">
-            See how your media will look with your branding in real-time
-          </p>
-        </div>
+
+        {availablePresets && (
+          <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline-block">
+            {availablePresets.length} {availablePresets.length === 1 ? "format" : "formats"} active
+          </span>
+        )}
       </div>
 
-      {/* Platform Framing Switcher Tabs - Grab & Drag to scroll, scrollbar removed */}
+      {/* Platform Framing Switcher Tabs Row */}
       {availablePresets && availablePresets.length > 0 && onSelectPreset && (
-        <div
-          ref={tabsContainerRef}
-          onMouseDown={handleTabsMouseDown}
-          onMouseMove={handleTabsMouseMove}
-          onMouseUp={handleTabsMouseUpOrLeave}
-          onMouseLeave={handleTabsMouseUpOrLeave}
-          onWheel={(e) => {
-            if (tabsContainerRef.current && e.deltaY !== 0) {
-              tabsContainerRef.current.scrollLeft += e.deltaY;
-            }
-          }}
-          className={`flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
-            isTabsDragging ? "cursor-grabbing" : "cursor-grab"
-          }`}
-          style={{
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-          }}
-        >
-          {availablePresets.map((preset) => {
-            const isSelected = activePreset?.id === preset.id;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                draggable={false}
-                onClick={(e) => handleTabClick(preset, e)}
-                className={`flex items-center justify-between gap-3 rounded-2xl p-2.5 px-3.5 text-xs transition-all shrink-0 select-none ${
-                  isTabsDragging ? "cursor-grabbing pointer-events-auto" : "cursor-pointer"
-                } ${
-                  isSelected
-                    ? "border-2 border-indigo-600 bg-indigo-50/70 text-indigo-950 font-bold shadow-xs ring-2 ring-indigo-500/20"
-                    : "border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 font-semibold shadow-2xs"
-                }`}
-              >
-                <div className="flex items-center gap-2 pointer-events-none">
-                  {preset.category === "Instagram" ? (
-                    <InstagramIcon className={`h-4 w-4 ${isSelected ? "text-indigo-600" : "text-purple-500"}`} />
-                  ) : preset.category === "Facebook" ? (
-                    <FacebookIcon className={`h-4 w-4 ${isSelected ? "text-indigo-600" : "text-blue-600"}`} />
-                  ) : preset.category === "YouTube" ? (
-                    <YoutubeIcon className={`h-4 w-4 ${isSelected ? "text-indigo-600" : "text-rose-600"}`} />
-                  ) : preset.category === "TikTok" ? (
-                    <Film className={`h-4 w-4 ${isSelected ? "text-indigo-600" : "text-slate-800"}`} />
-                  ) : (
-                    <Smartphone className={`h-4 w-4 ${isSelected ? "text-indigo-600" : "text-emerald-600"}`} />
-                  )}
-                  <span className="truncate max-w-[110px]">{preset.name}</span>
-                </div>
-                <span
-                  className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono pointer-events-none ${
-                    isSelected ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500"
+        <div className="relative flex items-center justify-between gap-2.5">
+          {/* Horizontally scrolling tab bar */}
+          <div
+            ref={tabsContainerRef}
+            onMouseDown={handleTabsMouseDown}
+            onMouseMove={handleTabsMouseMove}
+            onMouseUp={handleTabsMouseUpOrLeave}
+            onMouseLeave={handleTabsMouseUpOrLeave}
+            onWheel={(e) => {
+              if (tabsContainerRef.current && e.deltaY !== 0) {
+                tabsContainerRef.current.scrollLeft += e.deltaY;
+              }
+            }}
+            className={`flex-1 min-w-0 flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+              isTabsDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            {availablePresets.map((preset) => {
+              const isSelected = activePreset?.id === preset.id;
+              return (
+                <div
+                  key={preset.id}
+                  data-preset-id={preset.id}
+                  className={`group flex items-center rounded-2xl transition-all shrink-0 select-none ${
+                    isSelected
+                      ? "border-2 border-indigo-600 bg-indigo-50/80 text-indigo-950 font-bold shadow-xs ring-2 ring-indigo-500/20"
+                      : "border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 font-semibold shadow-2xs"
                   }`}
                 >
-                  {preset.aspectRatio}
-                </span>
+                  <button
+                    type="button"
+                    draggable={false}
+                    onClick={(e) => handleTabClick(preset, e)}
+                    className={`flex items-center gap-2.5 p-2.5 px-3 text-xs ${
+                      isTabsDragging ? "cursor-grabbing pointer-events-auto" : "cursor-pointer"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 pointer-events-none">
+                      {preset.category === "Instagram" ? (
+                        <InstagramIcon className={`h-4 w-4 ${isSelected ? "text-indigo-600" : "text-purple-500"}`} />
+                      ) : preset.category === "Facebook" ? (
+                        <FacebookIcon className={`h-4 w-4 ${isSelected ? "text-indigo-600" : "text-blue-600"}`} />
+                      ) : preset.category === "YouTube" ? (
+                        <YoutubeIcon className={`h-4 w-4 ${isSelected ? "text-indigo-600" : "text-rose-600"}`} />
+                      ) : preset.category === "TikTok" ? (
+                        <Film className={`h-4 w-4 ${isSelected ? "text-indigo-600" : "text-slate-800"}`} />
+                      ) : (
+                        <Smartphone className={`h-4 w-4 ${isSelected ? "text-indigo-600" : "text-emerald-600"}`} />
+                      )}
+                      <span className="truncate max-w-[120px]">{preset.name}</span>
+                    </div>
+                    <span
+                      className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono pointer-events-none ${
+                        isSelected ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {preset.aspectRatio}
+                    </span>
+                  </button>
+
+                  {/* Remove format button on tab if more than 1 format exists */}
+                  {onRemovePreset && availablePresets.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemovePreset(preset.id);
+                      }}
+                      title={`Remove ${preset.name} from formats`}
+                      className={`p-1 mr-1.5 rounded-full transition-colors cursor-pointer ${
+                        isSelected
+                          ? "text-indigo-400 hover:text-rose-600 hover:bg-indigo-100"
+                          : "text-slate-300 hover:text-rose-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* + Add Format button OUTSIDE the overflow container */}
+          {unselectedPresets.length > 0 && onAddPreset && (
+            <div ref={addMenuRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowAddMenu((prev) => !prev)}
+                className={`flex items-center gap-1.5 rounded-2xl border p-2.5 px-3 text-xs font-semibold transition-all cursor-pointer shadow-2xs ${
+                  showAddMenu
+                    ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-500/20"
+                    : "border-slate-300 bg-white hover:border-indigo-400 hover:bg-slate-50 text-slate-700"
+                }`}
+              >
+                <Plus className="h-3.5 w-3.5 text-indigo-600" />
+                <span className="hidden sm:inline">Add Format</span>
+                <ChevronDown
+                  className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
+                    showAddMenu ? "rotate-180 text-indigo-600" : ""
+                  }`}
+                />
               </button>
-            );
-          })}
+
+              {showAddMenu && (
+                <div
+                  className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-slate-200/90 bg-white p-2 shadow-2xl animate-in fade-in zoom-in-95 max-h-72 overflow-y-auto [scrollbar-width:thin] select-none"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-slate-100 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Add to formats
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {unselectedPresets.length} available
+                    </span>
+                  </div>
+                  <div className="space-y-0.5">
+                    {unselectedPresets.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          setShowAddMenu(false);
+                          onAddPreset(preset);
+                        }}
+                        className="flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-900 transition-colors cursor-pointer text-left group"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          {preset.category === "Instagram" ? (
+                            <InstagramIcon className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+                          ) : preset.category === "Facebook" ? (
+                            <FacebookIcon className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                          ) : preset.category === "YouTube" ? (
+                            <YoutubeIcon className="h-3.5 w-3.5 text-rose-600 shrink-0" />
+                          ) : preset.category === "TikTok" ? (
+                            <Film className="h-3.5 w-3.5 text-slate-800 shrink-0" />
+                          ) : (
+                            <Smartphone className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          )}
+                          <span className="truncate group-hover:font-semibold">{preset.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[10px] text-slate-400 hidden group-hover:inline">
+                            {preset.width}×{preset.height}
+                          </span>
+                          <span className="rounded-md bg-slate-100 group-hover:bg-indigo-100 group-hover:text-indigo-700 px-1.5 py-0.5 text-[9px] font-mono text-slate-600 font-semibold transition-colors">
+                            {preset.aspectRatio}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -438,16 +587,19 @@ export function MediaPreview({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className={`relative mx-auto w-full h-[320px] sm:h-[350px] overflow-hidden rounded-2xl border border-slate-300 bg-slate-950/95 shadow-inner select-none flex items-center justify-center p-3 ${
+        className={`relative mx-auto w-full h-[320px] sm:h-[360px] overflow-hidden rounded-2xl border border-slate-300 bg-slate-950/95 shadow-inner select-none flex items-center justify-center p-3 ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
       >
         {/* Real Aspect Ratio Preview Frame - Mathematically Exact Dimensions */}
         <div
+          data-preset-id={activePreset?.id}
           style={{
             width: `${frameWidth}px`,
             height: `${frameHeight}px`,
-            aspectRatio: activeSpec.cssAspect,
+            aspectRatio: `${targetRatio} / 1`,
+            maxWidth: "100%",
+            maxHeight: "100%",
           }}
           className="relative overflow-hidden rounded-xl border-2 border-indigo-500/60 shadow-2xl bg-black transition-all duration-200 flex items-center justify-center shrink-0"
         >
@@ -533,9 +685,11 @@ export function MediaPreview({
               }}
             >
               <span
-                className="font-bold tracking-wider text-white uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded text-xs leading-none"
+                className="font-bold tracking-wider uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded leading-none"
                 style={{
                   fontSize: `${Math.max(10, branding.brandName.size * 0.65)}px`,
+                  fontFamily: branding.brandName.fontFamily || "Inter, sans-serif",
+                  color: branding.brandName.color || "#ffffff",
                 }}
               >
                 {branding.brandName.text}
@@ -543,8 +697,8 @@ export function MediaPreview({
             </div>
           )}
 
-          {/* 3. Watermark Overlay */}
-          {branding.watermark.enabled && branding.watermark.text && (
+          {/* 3. Watermark Overlay (Text or Image Badge) */}
+          {branding.watermark.enabled && (
             <div
               className={`absolute pointer-events-none z-20 flex transition-all duration-150 ${getPositionClass(
                 branding.watermark.position
@@ -553,14 +707,30 @@ export function MediaPreview({
                 opacity: branding.watermark.opacity / 100,
               }}
             >
-              <span
-                className="font-mono font-medium tracking-tight text-white/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] bg-black/40 px-1.5 py-0.5 rounded text-[9px] leading-none select-none"
-                style={{
-                  fontSize: `${Math.max(8, branding.watermark.size * 0.65)}px`,
-                }}
-              >
-                {branding.watermark.text}
-              </span>
+              {branding.watermark.type === "image" && branding.watermark.imageUrl ? (
+                <div
+                  className="drop-shadow-md rounded bg-black/30 backdrop-blur-2xs p-0.5"
+                  style={{
+                    width: `${Math.max(24, branding.watermark.size * 2.2)}px`,
+                  }}
+                >
+                  <img
+                    src={branding.watermark.imageUrl}
+                    alt="Watermark badge"
+                    className="w-full h-auto object-contain max-h-8"
+                  />
+                </div>
+              ) : branding.watermark.text ? (
+                <span
+                  className="font-mono font-medium tracking-tight text-white/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] bg-black/40 px-1.5 py-0.5 rounded text-[9px] leading-none select-none"
+                  style={{
+                    fontSize: `${Math.max(8, branding.watermark.size * 0.65)}px`,
+                    fontFamily: branding.watermark.fontFamily || "monospace",
+                  }}
+                >
+                  {branding.watermark.text}
+                </span>
+              ) : null}
             </div>
           )}
 

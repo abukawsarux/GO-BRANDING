@@ -10,11 +10,13 @@ import {
   Play,
   Video,
   FolderClock,
+  Copy,
 } from "lucide-react";
 
 interface RecentHistoryProps {
   items: RecentGeneration[];
   onSelect: (item: RecentGeneration) => void;
+  onDuplicate?: (item: RecentGeneration) => void;
   onDelete: (id: string) => void;
   onClearAll: () => void;
 }
@@ -22,6 +24,7 @@ interface RecentHistoryProps {
 export function RecentHistory({
   items,
   onSelect,
+  onDuplicate,
   onDelete,
   onClearAll,
 }: RecentHistoryProps) {
@@ -190,6 +193,19 @@ export function RecentHistory({
                         <ArrowRight className="h-3 w-3 text-indigo-600" />
                         <span>Edit project</span>
                       </button>
+                      {onDuplicate && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            onDuplicate(item);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                        >
+                          <Copy className="h-3 w-3 text-indigo-600" />
+                          <span>Duplicate</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {

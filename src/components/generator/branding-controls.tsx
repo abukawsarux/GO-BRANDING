@@ -7,7 +7,6 @@ import {
   Type,
   Shield,
   Upload,
-  Sliders,
   Check,
   RotateCcw,
   Video,
@@ -15,8 +14,10 @@ import {
   Film,
   Sparkles,
   Palette,
+  Eye,
 } from "lucide-react";
 import { DEFAULT_SAMPLE_LOGO } from "@/lib/generator-constants";
+import { BrandKitSelector } from "@/components/branding/brand-kit-selector";
 
 interface BrandingControlsProps {
   branding: BrandingSettings;
@@ -27,16 +28,23 @@ interface BrandingControlsProps {
   onUpdateThumbnail?: (url: string, source: "auto" | "captured" | "custom") => void;
 }
 
-const POSITIONS: { id: OverlayPosition; label: string }[] = [
-  { id: "top-left", label: "Top Left" },
-  { id: "top-center", label: "Top Center" },
-  { id: "top-right", label: "Top Right" },
-  { id: "middle-left", label: "Middle Left" },
-  { id: "center", label: "Center" },
-  { id: "middle-right", label: "Middle Right" },
-  { id: "bottom-left", label: "Bottom Left" },
-  { id: "bottom-center", label: "Bottom Center" },
-  { id: "bottom-right", label: "Bottom Right" },
+const FONT_OPTIONS = [
+  { id: "Inter", label: "Inter (Modern Sans)" },
+  { id: "Montserrat", label: "Montserrat (Geometric)" },
+  { id: "Playfair Display", label: "Playfair (Classic Serif)" },
+  { id: "Space Grotesk", label: "Space Grotesk (Tech)" },
+  { id: "Roboto", label: "Roboto (Clean)" },
+  { id: "Oswald", label: "Oswald (Condensed Bold)" },
+  { id: "Poppins", label: "Poppins (Friendly)" },
+];
+
+const COLOR_SWATCHES = [
+  { hex: "#ffffff", label: "White" },
+  { hex: "#0f172a", label: "Charcoal" },
+  { hex: "#4f46e5", label: "Indigo" },
+  { hex: "#f59e0b", label: "Gold" },
+  { hex: "#10b981", label: "Emerald" },
+  { hex: "#ec4899", label: "Pink" },
 ];
 
 export function BrandingControls({
@@ -47,8 +55,9 @@ export function BrandingControls({
   thumbnailSource = "auto",
   onUpdateThumbnail,
 }: BrandingControlsProps) {
-  const [activeTab, setActiveTab] = useState<"logo" | "brandName" | "watermark" | "style" | "thumbnail">("logo");
+  const [activeTab, setActiveTab] = useState<"logo" | "brandName" | "watermark" | "thumbnail">("logo");
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const watermarkImgInputRef = useRef<HTMLInputElement>(null);
   const customThumbInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,6 +69,22 @@ export function BrandingControls({
         logo: {
           ...branding.logo,
           url,
+          enabled: true,
+        },
+      });
+    }
+  };
+
+  const handleWatermarkImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const url = URL.createObjectURL(file);
+      onChange({
+        ...branding,
+        watermark: {
+          ...branding.watermark,
+          type: "image",
+          imageUrl: url,
           enabled: true,
         },
       });
@@ -111,6 +136,9 @@ export function BrandingControls({
 
   return (
     <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs">
+      {/* Brand Kit Selector at the Top */}
+      <BrandKitSelector branding={branding} onChange={onChange} />
+
       {/* Branding Controls Header matching mockup */}
       <div className="flex items-center gap-2.5 mb-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 shadow-2xs">
@@ -127,7 +155,7 @@ export function BrandingControls({
         <button
           type="button"
           onClick={() => setActiveTab("logo")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all cursor-pointer ${
             activeTab === "logo"
               ? "bg-white text-slate-900 shadow-xs"
               : "text-slate-600 hover:text-slate-900"
@@ -143,7 +171,7 @@ export function BrandingControls({
         <button
           type="button"
           onClick={() => setActiveTab("brandName")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all cursor-pointer ${
             activeTab === "brandName"
               ? "bg-white text-slate-900 shadow-xs"
               : "text-slate-600 hover:text-slate-900"
@@ -159,7 +187,7 @@ export function BrandingControls({
         <button
           type="button"
           onClick={() => setActiveTab("watermark")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all cursor-pointer ${
             activeTab === "watermark"
               ? "bg-white text-slate-900 shadow-xs"
               : "text-slate-600 hover:text-slate-900"
@@ -172,24 +200,11 @@ export function BrandingControls({
           )}
         </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("style")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
-            activeTab === "style"
-              ? "bg-white text-slate-900 shadow-xs"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <Palette className="h-3.5 w-3.5 text-indigo-600" />
-          <span>Style</span>
-        </button>
-
         {mediaType === "video" && (
           <button
             type="button"
             onClick={() => setActiveTab("thumbnail")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "thumbnail"
                 ? "bg-white text-slate-900 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -234,7 +249,7 @@ export function BrandingControls({
               Logo Asset
             </label>
             <div className="flex items-center gap-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-1.5">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-1.5 shadow-2xs">
                 <img
                   src={branding.logo.url || DEFAULT_SAMPLE_LOGO}
                   alt="Logo preview"
@@ -252,7 +267,7 @@ export function BrandingControls({
                 <button
                   type="button"
                   onClick={() => logoInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs cursor-pointer"
                 >
                   <Upload className="h-3.5 w-3.5 text-slate-500" />
                   Upload Logo
@@ -265,7 +280,7 @@ export function BrandingControls({
                       logo: { ...branding.logo, url: DEFAULT_SAMPLE_LOGO, enabled: true },
                     })
                   }
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
                 >
                   Use Sample
                 </button>
@@ -333,10 +348,10 @@ export function BrandingControls({
         </div>
       )}
 
-      {/* --- TAB CONTENT: BRAND NAME --- */}
+      {/* --- TAB CONTENT: BRAND NAME (Matching Screenshot) --- */}
       {activeTab === "brandName" && (
-        <div className="mt-5 space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="mt-3.5 space-y-3.5">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h4 className="text-sm font-semibold text-slate-900">Enable Brand Name</h4>
               <p className="text-xs text-slate-500">Show brand text label on media</p>
@@ -372,8 +387,63 @@ export function BrandingControls({
                 })
               }
               placeholder="e.g. LUMINA CO."
-              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs font-semibold"
             />
+          </div>
+
+          {/* Font & Color Row */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Font Family Selector */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Font Style
+              </label>
+              <select
+                value={branding.brandName.fontFamily || "Inter"}
+                onChange={(e) =>
+                  onChange({
+                    ...branding,
+                    brandName: { ...branding.brandName, fontFamily: e.target.value },
+                  })
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none shadow-2xs cursor-pointer"
+              >
+                {FONT_OPTIONS.map((font) => (
+                  <option key={font.id} value={font.id}>
+                    {font.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Text Color Swatches */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Text Color
+              </label>
+              <div className="flex items-center gap-1.5 pt-1">
+                {COLOR_SWATCHES.map((color) => {
+                  const isSelected = (branding.brandName.color || "#ffffff").toLowerCase() === color.hex.toLowerCase();
+                  return (
+                    <button
+                      key={color.hex}
+                      type="button"
+                      onClick={() =>
+                        onChange({
+                          ...branding,
+                          brandName: { ...branding.brandName, color: color.hex },
+                        })
+                      }
+                      style={{ backgroundColor: color.hex }}
+                      title={color.label}
+                      className={`h-6 w-6 rounded-full border border-slate-300 transition-transform cursor-pointer ${
+                        isSelected ? "ring-2 ring-indigo-500 ring-offset-1 scale-110" : "hover:scale-105"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Font Size */}
@@ -444,11 +514,11 @@ export function BrandingControls({
 
       {/* --- TAB CONTENT: WATERMARK --- */}
       {activeTab === "watermark" && (
-        <div className="mt-5 space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="mt-3.5 space-y-3.5">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h4 className="text-sm font-semibold text-slate-900">Enable Watermark</h4>
-              <p className="text-xs text-slate-500">Copyright, handle, or website notice</p>
+              <p className="text-xs text-slate-500">Copyright, handle, or badge</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -466,29 +536,104 @@ export function BrandingControls({
             </label>
           </div>
 
-          {/* Watermark Text */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Watermark Text
-            </label>
-            <input
-              type="text"
-              value={branding.watermark.text}
-              onChange={(e) =>
+          {/* Watermark Mode: Text vs. Image */}
+          <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+            <button
+              type="button"
+              onClick={() =>
                 onChange({
                   ...branding,
-                  watermark: { ...branding.watermark, text: e.target.value },
+                  watermark: { ...branding.watermark, type: "text" },
                 })
               }
-              placeholder="e.g. © 2026 LUMINA CO • ALL RIGHTS RESERVED"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
+              className={`flex-1 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                (branding.watermark.type || "text") === "text"
+                  ? "bg-white text-indigo-700 shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Text Watermark
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...branding,
+                  watermark: { ...branding.watermark, type: "image" },
+                })
+              }
+              className={`flex-1 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                branding.watermark.type === "image"
+                  ? "bg-white text-indigo-700 shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Badge / Image
+            </button>
           </div>
+
+          {/* Text Mode */}
+          {(branding.watermark.type || "text") === "text" ? (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Watermark Notice Text
+              </label>
+              <input
+                type="text"
+                value={branding.watermark.text}
+                onChange={(e) =>
+                  onChange({
+                    ...branding,
+                    watermark: { ...branding.watermark, text: e.target.value },
+                  })
+                }
+                placeholder="e.g. © 2026 LUMINA CO • ALL RIGHTS RESERVED"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-indigo-500 focus:outline-none shadow-2xs font-mono"
+              />
+            </div>
+          ) : (
+            /* Image Badge Mode */
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Watermark Badge Asset
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center p-1 overflow-hidden shadow-2xs">
+                  {branding.watermark.imageUrl ? (
+                    <img
+                      src={branding.watermark.imageUrl}
+                      alt="Watermark badge"
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <Shield className="h-5 w-5 text-slate-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    ref={watermarkImgInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleWatermarkImageUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => watermarkImgInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs cursor-pointer"
+                  >
+                    <Upload className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Upload Badge PNG</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Size */}
           <div>
             <div className="flex justify-between text-xs font-medium text-slate-700 mb-1.5">
-              <span>Text Size</span>
+              <span>Size</span>
               <span className="font-mono text-slate-500">{branding.watermark.size}px</span>
             </div>
             <input
@@ -604,7 +749,7 @@ export function BrandingControls({
               <button
                 type="button"
                 onClick={() => customThumbInputRef.current?.click()}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
               >
                 <Upload className="h-3.5 w-3.5 text-slate-500" />
                 <span>Upload Custom Thumbnail</span>
@@ -614,7 +759,7 @@ export function BrandingControls({
                 <button
                   type="button"
                   onClick={() => onUpdateThumbnail?.("", "auto")}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   <RotateCcw className="h-3 w-3" />
                   <span>Reset to Auto Video Frame</span>
@@ -634,49 +779,6 @@ export function BrandingControls({
           </div>
         </div>
       )}
-
-      {/* --- TAB CONTENT: STYLE --- */}
-      {activeTab === "style" && (
-        <div className="mt-3.5 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <h4 className="text-sm font-semibold text-slate-900">Brand Styling & Colors</h4>
-              <p className="text-xs text-slate-500">Color themes and readability presets for overlays</p>
-            </div>
-            <span className="rounded-md bg-indigo-50 border border-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
-              Modern
-            </span>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-2">Overlay Theme</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                className="flex items-center gap-2.5 p-2.5 rounded-xl border border-indigo-500 bg-indigo-50/50 text-indigo-900 font-semibold text-xs text-left cursor-pointer"
-              >
-                <div className="h-4 w-4 rounded-full bg-slate-950 border border-white" />
-                <span>Classic Dark</span>
-              </button>
-              <button
-                type="button"
-                className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs text-left cursor-pointer"
-              >
-                <div className="h-4 w-4 rounded-full bg-white border border-slate-300" />
-                <span>Pure White</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600 space-y-1">
-            <span className="font-bold text-slate-800">Auto Contrast:</span>
-            <p className="text-[11px] text-slate-500">
-              Your overlays automatically apply soft drop-shadows and glassmorphic backdrops to ensure perfect readability over any background photo or video.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-

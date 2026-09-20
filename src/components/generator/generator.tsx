@@ -43,6 +43,7 @@ import {
   getRecentGenerations,
   saveRecentGeneration,
   deleteRecentGeneration,
+  duplicateRecentGeneration,
   clearRecentGenerations,
   createThumbnailDataUrl,
 } from "@/lib/storage-history";
@@ -297,6 +298,11 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
     setState("branding_editor");
   };
 
+  const handleDuplicateRecent = (item: RecentGeneration) => {
+    const updated = duplicateRecentGeneration(item.id);
+    setRecentItems(updated);
+  };
+
   const handleDeleteRecent = (id: string) => {
     const updated = deleteRecentGeneration(id);
     setRecentItems(updated);
@@ -449,6 +455,7 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
             <RecentHistory
               items={recentItems}
               onSelect={handleSelectRecent}
+              onDuplicate={handleDuplicateRecent}
               onDelete={handleDeleteRecent}
               onClearAll={handleClearAllRecent}
             />
@@ -571,13 +578,33 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
                     media={media}
                     branding={branding}
                     activePreset={currentPreset}
-                    availablePresets={allPresets}
+                    availablePresets={activePresets}
+                    allAvailablePresets={allPresets}
                     onSelectPreset={(preset) => {
                       setActivePresetId(preset.id);
                       if (preset.aspectRatio === "1:1") setPreviewRatio("square");
                       else if (preset.aspectRatio === "4:5") setPreviewRatio("portrait");
                       else if (preset.aspectRatio === "9:16") setPreviewRatio("story");
                       else setPreviewRatio("landscape");
+                    }}
+                    onAddPreset={(preset) => {
+                      if (!selectedPresetIds.includes(preset.id)) {
+                        setSelectedPresetIds([...selectedPresetIds, preset.id]);
+                      }
+                      setActivePresetId(preset.id);
+                      if (preset.aspectRatio === "1:1") setPreviewRatio("square");
+                      else if (preset.aspectRatio === "4:5") setPreviewRatio("portrait");
+                      else if (preset.aspectRatio === "9:16") setPreviewRatio("story");
+                      else setPreviewRatio("landscape");
+                    }}
+                    onRemovePreset={(presetId) => {
+                      if (selectedPresetIds.length > 1) {
+                        const updated = selectedPresetIds.filter((id) => id !== presetId);
+                        setSelectedPresetIds(updated);
+                        if (activePresetId === presetId) {
+                          setActivePresetId(updated[0]);
+                        }
+                      }
                     }}
                     previewRatio={previewRatio}
                     transform={currentTransform}
@@ -619,25 +646,29 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
                       {/* Standard Built-in Presets */}
                       {FORMAT_PRESETS.map((preset) => {
                         const isSelected = selectedPresetIds.includes(preset.id);
+                        const isActive = isSelected && currentPreset.id === preset.id;
                         return (
                           <button
                             key={preset.id}
                             type="button"
                             onClick={() => {
-                              if (isSelected) {
-                                if (selectedPresetIds.length > 1) {
-                                  setSelectedPresetIds(
-                                    selectedPresetIds.filter((id) => id !== preset.id)
-                                  );
-                                }
-                              } else {
+                              if (!isSelected) {
                                 setSelectedPresetIds([...selectedPresetIds, preset.id]);
+                                setActivePresetId(preset.id);
+                              } else if (!isActive) {
+                                setActivePresetId(preset.id);
+                              } else if (selectedPresetIds.length > 1) {
+                                const updated = selectedPresetIds.filter((id) => id !== preset.id);
+                                setSelectedPresetIds(updated);
+                                setActivePresetId(updated[0]);
                               }
                             }}
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
-                              isSelected
-                                ? "bg-slate-950 border-slate-950 text-white shadow-xs"
-                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                              isActive
+                                ? "bg-slate-950 border-indigo-500 text-white ring-2 ring-indigo-500/50 shadow-sm"
+                                : isSelected
+                                ? "bg-slate-900 border-slate-900 text-white shadow-2xs hover:bg-slate-800"
+                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
                             }`}
                           >
                             <span className={isSelected ? "text-indigo-400 font-bold" : "text-slate-400 font-bold"}>
@@ -651,6 +682,11 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
                             >
                               ({preset.aspectRatio})
                             </span>
+                            {isActive && (
+                              <span className="ml-0.5 rounded bg-indigo-600 px-1 py-0.2 text-[9px] font-bold text-white uppercase tracking-wider">
+                                Active
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -658,27 +694,31 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
                       {/* User Saved Custom Presets (Stay until deleted) */}
                       {customPresets.map((preset) => {
                         const isSelected = selectedPresetIds.includes(preset.id);
+                        const isActive = isSelected && currentPreset.id === preset.id;
                         return (
                           <div
                             key={preset.id}
                             className={`group inline-flex items-center rounded-xl text-xs font-semibold transition-all border shadow-2xs overflow-hidden ${
-                              isSelected
-                                ? "bg-slate-950 border-slate-950 text-white shadow-xs"
-                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                              isActive
+                                ? "bg-slate-950 border-indigo-500 text-white ring-2 ring-indigo-500/50 shadow-sm"
+                                : isSelected
+                                ? "bg-slate-900 border-slate-900 text-white shadow-2xs hover:bg-slate-800"
+                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
                             }`}
                           >
-                            {/* Toggle selection */}
+                            {/* Toggle selection or activate */}
                             <button
                               type="button"
                               onClick={() => {
-                                if (isSelected) {
-                                  if (selectedPresetIds.length > 1) {
-                                    setSelectedPresetIds(
-                                      selectedPresetIds.filter((id) => id !== preset.id)
-                                    );
-                                  }
-                                } else {
+                                if (!isSelected) {
                                   setSelectedPresetIds([...selectedPresetIds, preset.id]);
+                                  setActivePresetId(preset.id);
+                                } else if (!isActive) {
+                                  setActivePresetId(preset.id);
+                                } else if (selectedPresetIds.length > 1) {
+                                  const updated = selectedPresetIds.filter((id) => id !== preset.id);
+                                  setSelectedPresetIds(updated);
+                                  setActivePresetId(updated[0]);
                                 }
                               }}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 cursor-pointer"
@@ -690,6 +730,11 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
                               <span className="text-[10px] font-mono text-slate-400">
                                 ({preset.aspectRatio})
                               </span>
+                              {isActive && (
+                                <span className="ml-0.5 rounded bg-indigo-600 px-1 py-0.2 text-[9px] font-bold text-white uppercase tracking-wider">
+                                  Active
+                                </span>
+                              )}
                             </button>
 
                             {/* Delete/remove custom format */}
@@ -699,8 +744,8 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
                               title={`Remove "${preset.name}" from formats`}
                               className={`px-2 py-1.5 transition-colors cursor-pointer border-l ${
                                 isSelected
-                                  ? "border-slate-800 text-slate-400 hover:bg-red-500 hover:text-white"
-                                  : "border-slate-200 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                  ? "border-slate-800 text-slate-400 hover:bg-rose-500 hover:text-white"
+                                  : "border-slate-200 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                               }`}
                             >
                               <X className="h-3 w-3" />
@@ -760,10 +805,11 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
                     <button
                       type="button"
                       onClick={handleStartGeneration}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                      disabled={activePresets.length === 0}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-60"
                     >
                       <Sparkles className="h-4 w-4" />
-                      <span>Generate Media</span>
+                      <span>Generate {activePresets.length} {activePresets.length === 1 ? "Format" : "Formats"}</span>
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -933,6 +979,7 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
             <RecentHistory
               items={recentItems}
               onSelect={handleSelectRecent}
+              onDuplicate={handleDuplicateRecent}
               onDelete={handleDeleteRecent}
               onClearAll={handleClearAllRecent}
             />

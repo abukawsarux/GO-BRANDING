@@ -29,7 +29,86 @@ import {
   Maximize2,
   X,
   Camera,
+  Clock,
+  Pencil,
+  MoreVertical,
+  Globe,
+  Film,
+  Smartphone,
 } from "lucide-react";
+
+function InstagramIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
+
+function YoutubeIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+}
+
+function FacebookIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+  );
+}
+
+function TikTokIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.46V10.7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.13z"/>
+    </svg>
+  );
+}
+
+function getPlatformIcon(preset: FormatPreset) {
+  const cat = (preset.category || "").toLowerCase();
+  const name = (preset.name || "").toLowerCase();
+
+  if (cat === "instagram" || name.includes("instagram")) {
+    return (
+      <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white shadow-2xs shrink-0">
+        <InstagramIcon className="h-4 w-4" />
+      </div>
+    );
+  }
+  if (cat === "facebook" || name.includes("facebook")) {
+    return (
+      <div className="h-7 w-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-2xs shrink-0">
+        <FacebookIcon className="h-4 w-4" />
+      </div>
+    );
+  }
+  if (cat === "youtube" || name.includes("youtube")) {
+    return (
+      <div className="h-7 w-7 rounded-lg bg-red-600 flex items-center justify-center text-white shadow-2xs shrink-0">
+        <YoutubeIcon className="h-4 w-4" />
+      </div>
+    );
+  }
+  if (cat === "tiktok" || name.includes("tiktok")) {
+    return (
+      <div className="h-7 w-7 rounded-lg bg-black flex items-center justify-center text-white shadow-2xs shrink-0">
+        <TikTokIcon className="h-4 w-4" />
+      </div>
+    );
+  }
+  return (
+    <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-2xs shrink-0">
+      <Globe className="h-4 w-4" />
+    </div>
+  );
+}
 
 interface ResultCardProps {
   media: MediaFile;
@@ -64,7 +143,21 @@ export function ResultCard({
   const [playingPresets, setPlayingPresets] = useState<Record<string, boolean>>({});
   const [mutedMap, setMutedMap] = useState<Record<string, boolean>>({});
   const [previewModalPreset, setPreviewModalPreset] = useState<FormatPreset | null>(null);
+  const [openMenuPresetId, setOpenMenuPresetId] = useState<string | null>(null);
   const videoRefs = React.useRef<Record<string, HTMLVideoElement | null>>({});
+
+  // Close dropdown menu when clicking outside
+  useEffect(() => {
+    if (!openMenuPresetId) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-dropdown-menu]")) {
+        setOpenMenuPresetId(null);
+      }
+    };
+    window.addEventListener("click", handleClickOutside);
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, [openMenuPresetId]);
 
   const getPositionClass = (position: OverlayPosition): string => {
     switch (position) {
@@ -733,91 +826,109 @@ export function ResultCard({
 
   return (
     <div className="w-full space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
-            <Check className="h-6 w-6 stroke-[2.5]" />
+      {/* Header Bar matching Reference Mockup */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5 rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+        {/* Left Section: Status & Ready Summary */}
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-100">
+            <Check className="h-6 w-6 stroke-[3]" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-900">
-              Your branded media is ready.
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600">
-              {selectedPresets.length} formats rendered with custom per-platform framing & branding
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+              Your branded media is ready!
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              {selectedPresets.length} formats rendered with custom per-platform framing & branding.
             </p>
+            <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500 font-medium">
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-slate-400" />
+                <span>Generated in 24 seconds</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5 text-slate-400" />
+                <span>{selectedPresets.length} formats ready</span>
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Global Action CTAs, File Name & Format Switcher */}
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-          {/* Custom File Name Input */}
-          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
-            <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 shrink-0">
-              <Edit3 className="h-3.5 w-3.5 text-slate-500" />
-              <span>Name:</span>
-            </span>
-            <input
-              type="text"
-              value={fileName}
-              onChange={(e) => setFileName(e.target.value.replace(/[^a-zA-Z0-9-_]/g, "-"))}
-              placeholder="e.g. brand-campaign"
-              className="text-xs font-semibold text-slate-800 bg-transparent focus:outline-none w-28 sm:w-36"
-              title="Custom file name prefix for downloads"
-            />
+        {/* Right Section: All action controls on ONE single line */}
+        <div className="flex flex-wrap lg:flex-nowrap items-end gap-2.5 sm:gap-3 shrink-0">
+          {/* Project Name Input */}
+          <div>
+            <label className="text-[11px] font-medium text-slate-500 block mb-1">
+              Project name
+            </label>
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-2xs h-[38px]">
+              <Pencil className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <input
+                type="text"
+                value={fileName}
+                onChange={(e) => setFileName(e.target.value.replace(/[^a-zA-Z0-9-_]/g, "-"))}
+                placeholder="fashion-legacy"
+                className="text-xs font-semibold text-slate-800 bg-transparent focus:outline-none w-28 sm:w-36"
+                title="Custom file name prefix for downloads"
+              />
+            </div>
           </div>
 
-          {/* File Format Selector (PNG, JPG, WebP, SVG, MP4) */}
-          <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
-            <span className="text-[11px] font-semibold text-slate-400 px-2 flex items-center gap-1">
-              <FileType className="h-3 w-3" />
-              <span>Format:</span>
-            </span>
-            {(["png", "jpg", "webp", "svg", "mp4"] as ExportFileFormat[]).map((fmt) => (
-              <button
-                key={fmt}
-                type="button"
-                onClick={() => setSelectedFormat(fmt)}
-                className={`px-2.5 py-1 text-xs font-bold uppercase rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
-                  selectedFormat === fmt
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
-              >
-                {fmt === "mp4" && <Video className="h-3 w-3 text-indigo-400" />}
-                <span>{fmt}</span>
-              </button>
-            ))}
+          {/* Format Selector */}
+          <div>
+            <label className="text-[11px] font-medium text-slate-500 block mb-1">
+              Format
+            </label>
+            <div className="flex items-center gap-1 bg-slate-50/80 border border-slate-200 rounded-xl p-1 shadow-2xs h-[38px]">
+              {(["png", "jpg", "webp", "svg", "mp4"] as ExportFileFormat[]).map((fmt) => (
+                <button
+                  key={fmt}
+                  type="button"
+                  onClick={() => setSelectedFormat(fmt)}
+                  className={`px-2.5 py-1 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
+                    selectedFormat === fmt
+                      ? "bg-indigo-600 text-white shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                  }`}
+                >
+                  {fmt}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onEdit}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Edit
-          </button>
+          {/* Edit Button */}
+          <div>
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs h-[38px] cursor-pointer"
+            >
+              <Pencil className="h-3.5 w-3.5 text-slate-500" />
+              <span>Edit</span>
+            </button>
+          </div>
 
-          {/* Download All as Single ZIP */}
-          <button
-            type="button"
-            onClick={handleDownloadZip}
-            disabled={downloadAllActive}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-slate-800 shadow-sm transition-all hover:shadow disabled:opacity-75 cursor-pointer"
-          >
-            {downloadAllActive ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
-                <span>Packaging ZIP {zipProgress ? `(${zipProgress})` : "..."}</span>
-              </>
-            ) : (
-              <>
-                <Archive className="h-4 w-4 text-emerald-400" />
-                <span>Download All as ZIP</span>
-              </>
-            )}
-          </button>
+          {/* Download All (ZIP) Button on the exact same row */}
+          <div>
+            <button
+              type="button"
+              onClick={handleDownloadZip}
+              disabled={downloadAllActive}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 sm:px-5 text-xs sm:text-sm font-bold text-white shadow-sm shadow-indigo-100 transition-all disabled:opacity-75 cursor-pointer whitespace-nowrap h-[38px]"
+            >
+              {downloadAllActive ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  <span>Packaging ZIP {zipProgress ? `(${zipProgress})` : "..."}</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 stroke-[2.5]" />
+                  <span>Download All (ZIP)</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -840,28 +951,31 @@ export function ResultCard({
               key={preset.id}
               className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-xs hover:shadow-md transition-shadow"
             >
-              {/* Card Header */}
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-900">
-                    {preset.name}
-                  </h4>
-                  <div className="flex items-center gap-2 text-xs text-slate-500 font-mono mt-0.5">
-                    <span>
-                      {preset.width} × {preset.height}
-                    </span>
-                    <span>•</span>
-                    <span className="font-sans font-medium text-slate-600">
-                      {preset.aspectRatio}
-                    </span>
+              {/* Card Header matching reference mockup */}
+              <div className="flex items-center justify-between mb-3 gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {getPlatformIcon(preset)}
+                  <div className="min-w-0">
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                      {preset.name}
+                    </h4>
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium mt-0.5">
+                      <span>
+                        {preset.width} × {preset.height}
+                      </span>
+                      <span>•</span>
+                      <span>
+                        {preset.aspectRatio}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="rounded-md bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 capitalize">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="rounded-md bg-indigo-50 border border-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 capitalize">
                     {formatTransform.focalPosition || "center"}
                   </span>
-                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 capitalize">
                     {preset.category}
                   </span>
                 </div>
@@ -1058,57 +1172,113 @@ export function ResultCard({
                 </div>
               </div>
 
-              {/* Download / Re-download Action with active format indicator */}
-              {isDownloading ? (
-                <button
-                  type="button"
-                  disabled
-                  className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 py-2.5 text-xs sm:text-sm font-semibold text-slate-500 cursor-not-allowed"
-                >
-                  <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
-                  <span>
-                    {selectedFormat === "mp4" && videoRenderProgress[preset.id] !== undefined
-                      ? `Rendering MP4 (${videoRenderProgress[preset.id]}%)...`
-                      : "Downloading..."}
-                  </span>
-                </button>
-              ) : isDownloaded ? (
-                <button
-                  type="button"
-                  onClick={() => handleDownloadFormat(preset)}
-                  className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 py-2.5 text-xs sm:text-sm font-semibold text-emerald-800 transition-all shadow-2xs group cursor-pointer"
-                  title="Click to download this format again"
-                >
-                  <RotateCcw className="h-3.5 w-3.5 text-emerald-600 transition-transform group-hover:-rotate-45" />
-                  <span>Re-download .{selectedFormat.toUpperCase()}</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleDownloadFormat(preset)}
-                  className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 hover:bg-slate-200 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 transition-colors shadow-2xs cursor-pointer"
-                >
-                  {selectedFormat === "mp4" ? (
-                    <Video className="h-4 w-4 text-indigo-600" />
-                  ) : (
-                    <Download className="h-4 w-4 text-slate-600" />
-                  )}
-                  <span>Download .{selectedFormat.toUpperCase()}</span>
-                </button>
-              )}
+              {/* Card Action Row: Lavender Download Button + 3-dots Menu Button */}
+              <div className="relative mt-auto flex items-center gap-2" data-dropdown-menu>
+                {isDownloading ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-50/70 py-2 px-3 text-xs sm:text-sm font-semibold text-indigo-500 cursor-not-allowed h-[38px]"
+                  >
+                    <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
+                    <span className="truncate">
+                      {selectedFormat === "mp4" && videoRenderProgress[preset.id] !== undefined
+                        ? `Rendering (${videoRenderProgress[preset.id]}%)...`
+                        : "Downloading..."}
+                    </span>
+                  </button>
+                ) : isDownloaded ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadFormat(preset)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 py-2 px-3 text-xs sm:text-sm font-semibold text-emerald-800 transition-all shadow-2xs group cursor-pointer h-[38px]"
+                    title="Click to download this format again"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 text-emerald-600 transition-transform group-hover:-rotate-45" />
+                    <span className="truncate">Download {selectedFormat.toUpperCase()}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadFormat(preset)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2 px-3 text-xs sm:text-sm font-bold transition-colors shadow-2xs cursor-pointer h-[38px]"
+                  >
+                    <Download className="h-4 w-4 text-indigo-600 stroke-[2.5]" />
+                    <span className="truncate">Download {selectedFormat.toUpperCase()}</span>
+                  </button>
+                )}
 
-              {/* Download Branded Thumbnail / Cover JPG option for videos */}
-              {media.type === "video" && (
-                <button
-                  type="button"
-                  onClick={() => handleDownloadFormat(preset, "jpg")}
-                  className="mt-2 inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50/70 py-1.5 rounded-lg transition-colors cursor-pointer"
-                  title="Download this format's branded frame as high-res JPG thumbnail"
-                >
-                  <Camera className="h-3.5 w-3.5" />
-                  <span>Download Thumbnail (.JPG)</span>
-                </button>
-              )}
+                {/* 3-dots Menu Button */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuPresetId(openMenuPresetId === preset.id ? null : preset.id);
+                    }}
+                    className={`h-[38px] w-[38px] flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer ${
+                      openMenuPresetId === preset.id ? "bg-slate-100 ring-2 ring-indigo-500/20" : "bg-white"
+                    }`}
+                    title="More export options"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+
+                  {/* Dropdown Options */}
+                  {openMenuPresetId === preset.id && (
+                    <div
+                      className="absolute right-0 bottom-full mb-2 w-48 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl z-30"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Download As
+                      </div>
+                      {(["png", "jpg", "webp", "svg"] as ExportFileFormat[]).map((fmt) => (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuPresetId(null);
+                            handleDownloadFormat(preset, fmt);
+                          }}
+                          className="flex w-full items-center justify-between px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <span>{fmt.toUpperCase()} Image</span>
+                          {selectedFormat === fmt && <span className="h-1.5 w-1.5 rounded-full bg-indigo-600" />}
+                        </button>
+                      ))}
+
+                      {media.type === "video" && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenMenuPresetId(null);
+                              handleDownloadFormat(preset, "mp4");
+                            }}
+                            className="flex w-full items-center justify-between px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <span>MP4 Video</span>
+                            {selectedFormat === "mp4" && <span className="h-1.5 w-1.5 rounded-full bg-indigo-600" />}
+                          </button>
+                          <div className="my-1 border-t border-slate-100" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenMenuPresetId(null);
+                              handleDownloadFormat(preset, "jpg");
+                            }}
+                            className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Camera className="h-3.5 w-3.5 text-slate-400" />
+                            <span>Thumbnail Frame</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           );
         })}

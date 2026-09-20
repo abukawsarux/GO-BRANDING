@@ -313,7 +313,7 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
     setState("empty");
   };
 
-  const [activePlatformFilter, setActivePlatformFilter] = useState<string>("Instagram");
+  const [activePlatformFilter, setActivePlatformFilter] = useState<string>("All");
 
   const handleUpdateThumbnail = (thumbUrl: string, source: "auto" | "captured" | "custom") => {
     if (!media) return;
@@ -346,34 +346,67 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
 
           <span className="text-slate-300">|</span>
 
-          <div
+          <button
+            type="button"
             onClick={() => setShowRecentModal(true)}
-            className="flex items-center gap-1.5 cursor-pointer hover:text-slate-900 transition-colors"
+            className="flex items-center gap-1.5 cursor-pointer hover:text-indigo-600 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100"
+            title="Click to view and load your recent saved projects"
           >
             <Clock className="h-4 w-4 text-slate-700" />
             <span className="font-bold text-slate-800">Recent History</span>
             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[11px] font-bold text-white shadow-2xs">
               {recentItems.length}
             </span>
-          </div>
+          </button>
         </div>
 
         {/* Right: Preview size category buttons matching mockup */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-slate-500 mr-1">Preview size:</span>
-          {["Instagram", "YouTube", "Facebook", "TikTok", "Web", "Custom"].map((platform) => {
+          {["All", "Instagram", "YouTube", "Facebook", "TikTok", "Web", "Custom"].map((platform) => {
             const isSelected = activePlatformFilter === platform;
             return (
               <button
                 key={platform}
                 type="button"
                 onClick={() => {
-                  setActivePlatformFilter(platform);
-                  if (platform === "Instagram") setPreviewRatio("square");
-                  else if (platform === "YouTube") setPreviewRatio("landscape");
-                  else if (platform === "TikTok") setPreviewRatio("story");
-                  else if (platform === "Facebook") setPreviewRatio("portrait");
-                  else if (platform === "Web") setPreviewRatio("landscape");
+                  const next = isSelected && platform !== "All" ? "All" : platform;
+                  setActivePlatformFilter(next);
+
+                  if (next === "Instagram") {
+                    setPreviewRatio("square");
+                    const found = allPresets.find(
+                      (p) => p.category?.toLowerCase() === "instagram" || p.name.toLowerCase().includes("instagram")
+                    );
+                    if (found) setActivePresetId(found.id);
+                  } else if (next === "YouTube") {
+                    setPreviewRatio("landscape");
+                    const found = allPresets.find(
+                      (p) => p.category?.toLowerCase() === "youtube" || p.name.toLowerCase().includes("youtube")
+                    );
+                    if (found) setActivePresetId(found.id);
+                  } else if (next === "TikTok") {
+                    setPreviewRatio("story");
+                    const found = allPresets.find(
+                      (p) => p.category?.toLowerCase() === "tiktok" || p.name.toLowerCase().includes("tiktok")
+                    );
+                    if (found) setActivePresetId(found.id);
+                  } else if (next === "Facebook") {
+                    setPreviewRatio("portrait");
+                    const found = allPresets.find(
+                      (p) => p.category?.toLowerCase() === "facebook" || p.name.toLowerCase().includes("facebook")
+                    );
+                    if (found) setActivePresetId(found.id);
+                  } else if (next === "Web") {
+                    setPreviewRatio("landscape");
+                    const found = allPresets.find(
+                      (p) => p.category?.toLowerCase() === "web" || p.name.toLowerCase().includes("website")
+                    );
+                    if (found) setActivePresetId(found.id);
+                  } else if (next === "Custom") {
+                    const found = allPresets.find((p) => p.isCustom);
+                    if (found) setActivePresetId(found.id);
+                  }
                 }}
                 className={`rounded-xl px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
                   isSelected
@@ -391,6 +424,23 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
       {/* State 1: EMPTY VIEW - Seamless layout matching reference mockup */}
       {state === "empty" && (
         <div className="space-y-6">
+          {activePlatformFilter !== "All" && (
+            <div className="flex items-center justify-between rounded-2xl bg-indigo-50/80 border border-indigo-100 px-4 py-2.5 text-xs text-indigo-700 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+                <span>
+                  Target Platform Filter: <strong className="font-bold text-indigo-900">{activePlatformFilter}</strong>. Upload an image or video to focus framing on {activePlatformFilter}.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivePlatformFilter("All")}
+                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-900 underline cursor-pointer"
+              >
+                Show All Platforms
+              </button>
+            </div>
+          )}
           <UploadZone
             onFileSelected={handleFileSelected}
             generationsRemaining={freeGenerations}
@@ -819,7 +869,21 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
           <ResultCard
             media={media}
             branding={branding}
-            selectedPresets={activePresets}
+            selectedPresets={
+              !activePlatformFilter || activePlatformFilter === "All"
+                ? activePresets
+                : (() => {
+                    const filtered = activePresets.filter((preset) => {
+                      const cat = (preset.category || "").toLowerCase();
+                      const name = (preset.name || "").toLowerCase();
+                      const filter = activePlatformFilter.toLowerCase();
+                      if (filter === "custom") return preset.isCustom;
+                      if (filter === "web") return cat === "web" || name.includes("website");
+                      return cat === filter || name.includes(filter);
+                    });
+                    return filtered.length > 0 ? filtered : activePresets;
+                  })()
+            }
             transform={currentTransform}
             presetTransforms={presetTransforms}
             onReset={handleReset}

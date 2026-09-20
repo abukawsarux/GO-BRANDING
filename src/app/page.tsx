@@ -1,54 +1,28 @@
-import { getOrCreateDefaultWorkspace } from "@/core/auth/context";
-import { DashboardHeader } from "@/components/layout/header";
-import { StudioGenerator } from "@/components/studio/studio-generator";
-import { BrandKitData } from "@/types/template";
+"use client";
 
-export const dynamic = "force-dynamic";
+import React, { useState } from "react";
+import { Navbar } from "@/components/navbar";
+import { Hero } from "@/components/hero";
+import { Generator } from "@/components/generator/generator";
+import { Footer } from "@/components/footer";
+import { GeneratorState } from "@/types/generator";
 
-export default async function HomePage() {
-  const { workspace, brand, brandKit, credits } =
-    await getOrCreateDefaultWorkspace();
-
-  const formattedKit: BrandKitData = {
-    primaryColor: brandKit?.primaryColor || "#0F172A",
-    secondaryColor: brandKit?.secondaryColor || "#3B82F6",
-    accentColor: brandKit?.accentColor || "#F59E0B",
-    backgroundColor: brandKit?.backgroundColor || "#FFFFFF",
-    textColor: brandKit?.textColor || "#0F172A",
-    headingFont: brandKit?.headingFont || "Inter",
-    bodyFont: brandKit?.bodyFont || "Inter",
-    primaryLogoUrl: brandKit?.primaryLogoUrl,
-    website: brandKit?.website,
-    phone: brandKit?.phone,
-    email: brandKit?.email,
-    defaultCta: brandKit?.defaultCta || "Shop Now",
-    instagramHandle: brandKit?.instagramHandle,
-    facebookHandle: brandKit?.facebookHandle,
-    tiktokHandle: brandKit?.tiktokHandle,
-    watermarkEnabled: brandKit?.watermarkEnabled ?? true,
-    watermarkPosition: brandKit?.watermarkPosition,
-    watermarkOpacity: brandKit?.watermarkOpacity ?? 0.85,
-  };
+export default function HomePage() {
+  const [currentState, setCurrentState] = useState<GeneratorState>("empty");
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <DashboardHeader
-        workspaceName={workspace.name}
-        brandName={brand?.name || "My Brand"}
-        credits={credits}
-      />
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8">
-        <StudioGenerator
-          workspaceId={workspace.id}
-          brand={{
-            id: brand.id,
-            name: brand.name,
-            slug: brand.slug,
-          }}
-          brandKit={formattedKit}
-          initialCredits={credits}
-        />
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white">
+      {/* 1. Header Navigation */}
+      <Navbar />
+
+      {/* 2. Main Service within Viewport Area */}
+      <main className="flex-1 flex flex-col justify-start py-4 sm:py-6">
+        <Generator onStateChange={setCurrentState} />
       </main>
+
+      {/* 3. Compact Bottom Footer */}
+      <Footer />
     </div>
   );
 }
+

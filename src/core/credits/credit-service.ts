@@ -23,7 +23,7 @@ export async function deductCredits(params: {
   description: string;
   referenceId?: string;
 }): Promise<number> {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     let balanceRecord = await tx.creditBalance.findUnique({
       where: { workspaceId: params.workspaceId },
     });
@@ -70,7 +70,7 @@ export async function addCredits(params: {
   description: string;
   referenceId?: string;
 }): Promise<number> {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const balanceRecord = await tx.creditBalance.upsert({
       where: { workspaceId: params.workspaceId },
       update: { credits: { increment: params.amount } },

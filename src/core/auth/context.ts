@@ -119,7 +119,7 @@ export async function getOrCreateDefaultWorkspace() {
     }
 
     const defaultBrand =
-      workspace.brands.find((b) => b.isDefault) || workspace.brands[0];
+      workspace.brands.find((b: any) => b.isDefault) || workspace.brands[0];
 
     return {
       workspace,

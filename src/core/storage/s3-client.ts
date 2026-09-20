@@ -1,9 +1,3 @@
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import fs from "fs/promises";
 import path from "path";
 
@@ -13,8 +7,11 @@ const isConfigured = Boolean(
     process.env.STORAGE_ACCESS_KEY_ID !== "replace_with_access_key"
 );
 
-const s3Client = isConfigured
-  ? new S3Client({
+async function getS3Client() {
+  if (!isConfigured) return null;
+  try {
+    const { S3Client } = await import("@aws-sdk/client-s3");
+    return new S3Client({
       region: process.env.STORAGE_REGION || "auto",
       endpoint: process.env.STORAGE_ENDPOINT,
       credentials: {
@@ -22,8 +19,11 @@ const s3Client = isConfigured
         secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY!,
       },
       forcePathStyle: true,
-    })
-  : null;
+    });
+  } catch {
+    return null;
+  }
+}
 
 const BUCKET_NAME = process.env.STORAGE_BUCKET_NAME || "brandflow-assets";
 const PUBLIC_URL = process.env.STORAGE_PUBLIC_URL || "";
@@ -45,24 +45,31 @@ export async function createPresignedUploadUrl(params: {
   const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   const fileKey = `workspaces/${params.workspaceId}/assets/${uniqueId}${extension}`;
 
-  if (s3Client) {
-    const command = new PutObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: fileKey,
-      ContentType: params.mimeType,
-    });
+  const client = await getS3Client();
+  if (client) {
+    try {
+      const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+      const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+      const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: fileKey,
+        ContentType: params.mimeType,
+      });
 
-    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
-    const publicUrl = PUBLIC_URL
-      ? `${PUBLIC_URL.replace(/\/$/, "")}/${fileKey}`
-      : uploadUrl.split("?")[0];
+      const uploadUrl = await getSignedUrl(client, command, { expiresIn: 900 });
+      const publicUrl = PUBLIC_URL
+        ? `${PUBLIC_URL.replace(/\/$/, "")}/${fileKey}`
+        : uploadUrl.split("?")[0];
 
-    return {
-      uploadUrl,
-      fileKey,
-      publicUrl,
-      isDirectStorage: true,
-    };
+      return {
+        uploadUrl,
+        fileKey,
+        publicUrl,
+        isDirectStorage: true,
+      };
+    } catch {
+      // Fallback to local storage if AWS SDK fails
+    }
   }
 
   // Local development fallback: serve route handler
@@ -82,19 +89,25 @@ export async function saveRenderedAsset(params: {
   buffer: Buffer;
   mimeType: string;
 }): Promise<string> {
-  if (s3Client) {
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: params.fileKey,
-        Body: params.buffer,
-        ContentType: params.mimeType,
-      })
-    );
+  const client = await getS3Client();
+  if (client) {
+    try {
+      const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+      await client.send(
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: params.fileKey,
+          Body: params.buffer,
+          ContentType: params.mimeType,
+        })
+      );
 
-    return PUBLIC_URL
-      ? `${PUBLIC_URL.replace(/\/$/, "")}/${params.fileKey}`
-      : `https://${BUCKET_NAME}.s3.amazonaws.com/${params.fileKey}`;
+      return PUBLIC_URL
+        ? `${PUBLIC_URL.replace(/\/$/, "")}/${params.fileKey}`
+        : `https://${BUCKET_NAME}.s3.amazonaws.com/${params.fileKey}`;
+    } catch {
+      // Fallback to local storage
+    }
   }
 
   // Local development filesystem storage

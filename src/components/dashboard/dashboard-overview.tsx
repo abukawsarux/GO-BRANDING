@@ -132,9 +132,11 @@ export function DashboardOverview({
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-black text-slate-900">
-              {mounted ? recentProjects.length : 5}
+              {mounted ? recentProjects.length : 0}
             </span>
-            <span className="text-xs text-emerald-600 font-semibold">Active in storage</span>
+            <span className="text-xs text-emerald-600 font-semibold">
+              {recentProjects.length > 0 ? "Active in storage" : "No saved projects"}
+            </span>
           </div>
           <p className="mt-1 text-[11px] text-slate-500">
             Re-open and edit any generation anytime.

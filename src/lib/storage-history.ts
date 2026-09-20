@@ -1,90 +1,49 @@
 import { RecentGeneration, BrandingSettings, MediaFrameTransform } from "@/types/generator";
 import { DEFAULT_BRANDING } from "./generator-constants";
 
-const STORAGE_KEY = "branded_media_recent_generations_v1";
+const STORAGE_KEY = "branded_media_recent_generations_v2";
+const LEGACY_STORAGE_KEY = "branded_media_recent_generations_v1";
 const MAX_HISTORY_ITEMS = 12;
 
-export const DEFAULT_RECENT_PROJECTS: RecentGeneration[] = [
-  {
-    id: "proj-1",
-    createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(), // ~25 mins ago
-    mediaName: "lumina-headphone.mp4",
-    mediaType: "video",
-    thumbnailUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80",
-    branding: DEFAULT_BRANDING,
-    transform: { zoom: 1.0, panX: 0, panY: 0, focalPosition: "center" },
-    previewRatio: "square",
-    formatsCount: 2,
-    selectedPresetIds: ["ig-square", "yt-thumb"],
-  },
-  {
-    id: "proj-2",
-    createdAt: new Date(Date.now() - 1000 * 60 * 41).toISOString(),
-    mediaName: "workout-poster.png",
-    mediaType: "image",
-    thumbnailUrl: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
-    branding: {
-      ...DEFAULT_BRANDING,
-      brandName: { ...DEFAULT_BRANDING.brandName, text: "LUMINA CO." },
-    },
-    transform: { zoom: 1.0, panX: 0, panY: 0, focalPosition: "center" },
-    previewRatio: "square",
-    formatsCount: 3,
-    selectedPresetIds: ["ig-square", "fb-post", "web-banner"],
-  },
-  {
-    id: "proj-3",
-    createdAt: new Date(Date.now() - 1000 * 60 * 48).toISOString(),
-    mediaName: "sneaker-ad-720w.mp4",
-    mediaType: "video",
-    thumbnailUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
-    branding: DEFAULT_BRANDING,
-    transform: { zoom: 1.0, panX: 0, panY: 0, focalPosition: "center" },
-    previewRatio: "landscape",
-    formatsCount: 1,
-    selectedPresetIds: ["yt-thumb"],
-  },
-  {
-    id: "proj-4",
-    createdAt: new Date(Date.now() - 1000 * 60 * 66).toISOString(),
-    mediaName: "travel-story.jpg",
-    mediaType: "image",
-    thumbnailUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
-    branding: DEFAULT_BRANDING,
-    transform: { zoom: 1.0, panX: 0, panY: 0, focalPosition: "center" },
-    previewRatio: "story",
-    formatsCount: 4,
-    selectedPresetIds: ["ig-story", "fb-story", "ig-portrait", "ig-square"],
-  },
-  {
-    id: "proj-5",
-    createdAt: new Date(Date.now() - 1000 * 60 * 79).toISOString(),
-    mediaName: "fashion-post.png",
-    mediaType: "image",
-    thumbnailUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
-    branding: DEFAULT_BRANDING,
-    transform: { zoom: 1.0, panX: 0, panY: 0, focalPosition: "center" },
-    previewRatio: "portrait",
-    formatsCount: 1,
-    selectedPresetIds: ["ig-portrait"],
-  },
-];
+// Production clean default: no dummy mockup projects
+export const DEFAULT_RECENT_PROJECTS: RecentGeneration[] = [];
 
 export function getRecentGenerations(): RecentGeneration[] {
-  if (typeof window === "undefined") return DEFAULT_RECENT_PROJECTS;
+  if (typeof window === "undefined") return [];
 
   try {
+    // Purge legacy dummy mockups from v1 if present
+    if (localStorage.getItem(LEGACY_STORAGE_KEY)) {
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      // Seed default mockup projects if empty
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_RECENT_PROJECTS));
-      return DEFAULT_RECENT_PROJECTS;
+      return [];
     }
+
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+
+    // Filter out any legacy dummy projects (proj-1 through proj-5)
+    const cleaned = parsed.filter(
+      (item: RecentGeneration) =>
+        item &&
+        item.id !== "proj-1" &&
+        item.id !== "proj-2" &&
+        item.id !== "proj-3" &&
+        item.id !== "proj-4" &&
+        item.id !== "proj-5"
+    );
+
+    if (cleaned.length !== parsed.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+    }
+
+    return cleaned;
   } catch (err) {
     console.warn("Failed to read recent generations from localStorage:", err);
-    return DEFAULT_RECENT_PROJECTS;
+    return [];
   }
 }
 

@@ -350,20 +350,23 @@ export function Generator({ onStateChange }: GeneratorProps = {}) {
             </span>
           </div>
 
-          <span className="text-slate-300">|</span>
-
-          <button
-            type="button"
-            onClick={() => setShowRecentModal(true)}
-            className="flex items-center gap-1.5 cursor-pointer hover:text-indigo-600 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100"
-            title="Click to view and load your recent saved projects"
-          >
-            <Clock className="h-4 w-4 text-slate-700" />
-            <span className="font-bold text-slate-800">Recent History</span>
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[11px] font-bold text-white shadow-2xs">
-              {recentItems.length}
-            </span>
-          </button>
+          {recentItems.length > 0 && (
+            <>
+              <span className="text-slate-300">|</span>
+              <button
+                type="button"
+                onClick={() => setShowRecentModal(true)}
+                className="flex items-center gap-1.5 cursor-pointer hover:text-indigo-600 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100"
+                title="Click to view and load your recent saved projects"
+              >
+                <Clock className="h-4 w-4 text-slate-700" />
+                <span className="font-bold text-slate-800">Recent History</span>
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[11px] font-bold text-white shadow-2xs">
+                  {recentItems.length}
+                </span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Right: Preview size category buttons matching mockup */}
